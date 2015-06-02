@@ -16,5 +16,5 @@ Lasagne 9b48d675dbaa6f1255003cb2b76fab7deed65961
 
 # refs
 1. http://arxiv.org/abs/1312.6114
-2. https://github.com/y0ast/Variational-Autoencoder
-
+2. http://vdumoulin.github.io/articles/vae-demo/
+3. https://github.com/y0ast/Variational-Autoencoder
