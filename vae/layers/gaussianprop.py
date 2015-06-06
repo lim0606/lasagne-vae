@@ -69,7 +69,7 @@ class GaussianPropLayer(MergeLayer):
         #print "inputs[0].shape[1]", inputs[0].shape[1]
         #print "inputs[0].ndim", inputs[0].ndim
         #inputs_0_printed = theano.printing.Print('inputs[0]')(inputs[0])
-        z = inputs[0] + theano.tensor.exp(inputs[1]) # * self.eta # * eta_printed
+        z = inputs[0] + theano.tensor.exp(inputs[1]) * self.eta # * eta_printed
         #z = inputs_0_printed + theano.tensor.sqrt(inputs[1]) * self.eta
         #z = inputs_0_printed + theano.tensor.exp(inputs[1])
         #z = inputs_0_printed.reshape(theano.tensor.cast((self.input_shapes[0][0], self.input_shapes[0][1]), 'int64')) + theano.tensor.sqrt(inputs[1].reshape(theano.tensor.cast((self.input_shapes[1][0], self.input_shapes[1][1]), 'int64'))) * self.eta

@@ -5,9 +5,9 @@ import theano
 import theano.tensor as T
 
 import numpy as np
-import sklearn.datasets
-import sklearn.cross_validation
-import sklearn.metrics
+#import sklearn.datasets
+#import sklearn.cross_validation
+#import sklearn.metrics
 import lasagne
 
 import vae
@@ -169,8 +169,8 @@ prior = 1 / L * theano.tensor.sum( l_in_tmp * theano.tensor.log(l_out.get_output
 kl_div = num_data / batchsize * ( 0.5 * theano.tensor.sum(1+theano.tensor.log(l_log_sigma.get_output())- theano.tensor.sqr(l_mu.get_output()) - l_log_sigma.get_output())  
 lower_bound = kl_div + prior
 '''
-logpxz = -T.nnet.binary_crossentropy(l_out.get_output(), l_in.get_output().reshape((l_in.get_output().shape[0], T.prod(l_in.get_output().shape[1:])))).sum()
-minus_kl_div = 0.5 * (1 + 2*l_log_sigma.get_output()- theano.tensor.sqr(l_mu.get_output()) - theano.tensor.exp(2*l_log_sigma.get_output())).sum()
+logpxz = -T.nnet.binary_crossentropy(lasagne.layers.get_output(l_out), lasagne.layers.get_output(l_in).reshape((lasagne.layers.get_output(l_in).shape[0], T.prod(lasagne.layers.get_output(l_in).shape[1:])))).sum()
+minus_kl_div = 0.5 * (1 + 2*lasagne.layers.get_output(l_log_sigma)- theano.tensor.sqr(lasagne.layers.get_output(l_mu)) - theano.tensor.exp(2*lasagne.layers.get_output(l_log_sigma))).sum()
 
 lower_bound = (minus_kl_div + logpxz) #/batchsize
 
@@ -186,7 +186,7 @@ minus_kl_div_fn = theano.function(inputs=[l_in.input_var],
 logpxz_fn = theano.function(inputs=[l_in.input_var],
                           outputs=[logpxz])
 all_layers_fn = theano.function(inputs=[l_in.input_var], 
-                          outputs=[l_in.get_output(), l_hidden1.get_output(), l_mu.get_output(), l_log_sigma.get_output(), l_z.get_output(), l_hidden2.get_output(), l_out.get_output()])  
+                          outputs=[lasagne.layers.get_output(l_in), lasagne.layers.get_output(l_hidden1), lasagne.layers.get_output(l_mu), lasagne.layers.get_output(l_log_sigma), lasagne.layers.get_output(l_z), lasagne.layers.get_output(l_hidden2), lasagne.layers.get_output(l_out)])  
 
 '''
 updates = lasagne.updates.momentum(
@@ -249,13 +249,13 @@ train_fn = theano.function(inputs=[l_in.input_var],
 #   input data
 valid_fn = theano.function(inputs=[l_in.input_var],
                            outputs=[lower_bound,
-                                    l_out.get_output(deterministic=True)])
+                                    lasagne.layers.get_output(l_out, deterministic=True)])
 
 # ################################# training #################################
 
 print("Starting training...")
 
-num_epochs = 25
+num_epochs = 100
 for epoch_num in range(num_epochs):
     # iterate over training minibatches and update the weights
     num_batches_train = int(np.ceil(len(X_train) / batchsize))
@@ -301,7 +301,7 @@ for epoch_num in range(num_epochs):
             print params_updated[i]
             print batchsize
             print num_data
-        '''        
+         
         for i in xrange(len(params_asdf)):
             h_asdf[i] += np.asarray(grads[i])*np.asarray(grads[i])
             #if i < 5 or (i < 6 and len(params_asdf) == 12):
@@ -319,7 +319,7 @@ for epoch_num in range(num_epochs):
 
         lasagne.layers.set_all_param_values(l_out, params_asdf)
          
-        '''
+        
         raise NameError("Hi")       
         if np.isnan(loss).sum() >= 1:
             raise ValueError('Nan in loss')
@@ -342,7 +342,7 @@ for epoch_num in range(num_epochs):
         loss, probabilities_batch = valid_fn(X_batch)
         #print(probabilities_batch.shape)
         #raise NameError('Hi There')
-        valid_losses.append(loss)
+        valid_losses.append(loss/batchsize)
         list_of_probabilities_batch.append(probabilities_batch)
     valid_loss = np.mean(valid_losses)
     # concatenate probabilities for each batch into a matrix
