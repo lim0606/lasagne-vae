@@ -6,7 +6,7 @@ Ubuntu 14.04
 
 Nvidia Titan Z
 
-numpy 1.8.2
+numpy 1.9.2
 
 scipy 0.16.0b2
 
