@@ -5,12 +5,11 @@ import theano
 import theano.tensor as T
 
 import numpy as np
-#import sklearn.datasets
-#import sklearn.cross_validation
-#import sklearn.metrics
 import lasagne
 
 import vae
+from utils.tensor_repeat import tensor_repeat
+
 # Variational Inference 
 # let us have p(x|z) and p(z) (this can be true prob dist or some models we assumed)
 # and we want to find p(z|x) 
@@ -45,23 +44,6 @@ import vae
 # thus we can use reparametrization trick with e.q. 8
 
 # Step 1: load data ####################################
-'''mnist = sklearn.datasets.fetch_mldata('MNIST original')
-
-X = mnist['data'].astype(theano.config.floatX) / 255.0
-y = mnist['target'].astype("int32")
-
-X_train, X_valid, y_train, y_valid = sklearn.cross_validation.train_test_split(X, y, random_state=42)
-
-print X.shape
-#X_train = X_train.reshape(-1, 1, 28, 28)
-#X_valid = X_valid.reshape(-1, 1, 28, 28)
-
-print X_train.shape
-print X_valid.shape
-
-print X[20000, :]
-raise NameError("hi")
-'''
 import gzip, cPickle
 
 f = gzip.open('mnist.pkl.gz', 'rb')
@@ -74,7 +56,7 @@ print "X_train[0,:]", X_train[0,:]
 # Step 0: initialization ##############################
 num_data = X_train.shape[0]
 batchsize = 100
-L = 1
+L = 5
 hidden_size = 400
 z_size = 20
 num_data_shared = theano.shared(np.array(num_data, dtype=theano.config.floatX), name='num_data')
@@ -159,17 +141,22 @@ l_out = lasagne.layers.DenseLayer(
     #b = 0.0000001*np.arange(0,784).reshape((784,)),
 )
 
-
 # build cost
-'''l_in_tmp = l_in.get_output().reshape((l_in.get_output().shape[0], T.prod(l_in.get_output().shape[1:]))).dimshuffle(0,'x',1)
-cost = num_data / batchsize * sum_over_all {0.5 * sum_over_diagonal{1+theano.tensor.log(l_log_sigma.get_out())- theano.tensor.sqr(l_mu.get_out()) - l_log_sigma} \
-       + 1 / L * sum_over_L { sum_over_D{ l_in_tmp * theano.tensor.log(l_out) + (1-l_in_tmp)*theano.tensor.log(1-l_out) }  } \
-}
-prior = 1 / L * theano.tensor.sum( l_in_tmp * theano.tensor.log(l_out.get_output()) + (1-l_in_tmp)*theano.tensor.log(1-l_out.get_output()) ) 
-kl_div = num_data / batchsize * ( 0.5 * theano.tensor.sum(1+theano.tensor.log(l_log_sigma.get_output())- theano.tensor.sqr(l_mu.get_output()) - l_log_sigma.get_output())  
-lower_bound = kl_div + prior
+#batchsize = lasagne.layers.get_output(l_in).shape[0]
+input_dim = T.prod(lasagne.layers.get_output(l_in).shape[1:])
+input_tmp =  lasagne.layers.get_output(l_in).reshape((lasagne.layers.get_output(l_in).shape[0], T.prod(lasagne.layers.get_output(l_in).shape[1:])))
 '''
-logpxz = -T.nnet.binary_crossentropy(lasagne.layers.get_output(l_out), lasagne.layers.get_output(l_in).reshape((lasagne.layers.get_output(l_in).shape[0], T.prod(lasagne.layers.get_output(l_in).shape[1:])))).sum()
+input_tmp_list = []
+for i in xrange(L):
+    input_tmp_list.append(theano.tensor.ones_like(input_tmp))
+    input_tmp_list[i] = input_tmp_list[i] * input_tmp
+input = theano.tensor.concatenate(input_tmp_list, axis=1)
+'''
+input = tensor_repeat(input_tmp, size=L, axis=1)
+input = input.reshape((batchsize * L, input_dim))
+output =  lasagne.layers.get_output(l_out)
+logpxz = -T.nnet.binary_crossentropy(output, input).sum() / L 
+
 minus_kl_div = 0.5 * (1 + 2*lasagne.layers.get_output(l_log_sigma)- theano.tensor.sqr(lasagne.layers.get_output(l_mu)) - theano.tensor.exp(2*lasagne.layers.get_output(l_log_sigma))).sum()
 
 lower_bound = (minus_kl_div + logpxz) #/batchsize

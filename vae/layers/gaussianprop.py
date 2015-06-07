@@ -56,29 +56,33 @@ class GaussianPropLayer(MergeLayer):
 
         #print "self.input_shapes[0][0]", self.input_shapes[0][0]
         #print "self.input_shapes[0][1]", self.input_shapes[0][1]
+
+        #self.eta = self.srng.normal((self.input_shapes[0][0] * self.L, self.input_shapes[0][1]))
         self.eta = self.srng.normal((self.input_shapes[0][0], self.input_shapes[0][1]))
         # input_shapes[0] = mu.shape
-        # input_shapes[1] = sigma_sq.shape
+        # input_shapes[1] = log_sigma.shape
         # input_shapes[0][0] = batchsize
         # input_shapes[0][1] = num_inputs
         #eta_printed = theano.printing.Print('eta')(self.eta)        
 
         # inputs[0] = mu
-        # inputs[1] = sigma_sq
+        # inputs[1] = log_sigma i.e. log(sigma)
         #print "inputs[0].shape[0]", inputs[0].shape[0]
         #print "inputs[0].shape[1]", inputs[0].shape[1]
         #print "inputs[0].ndim", inputs[0].ndim
         #inputs_0_printed = theano.printing.Print('inputs[0]')(inputs[0])
-        z = inputs[0] + theano.tensor.exp(inputs[1]) * self.eta # * eta_printed
-        #z = inputs_0_printed + theano.tensor.sqrt(inputs[1]) * self.eta
-        #z = inputs_0_printed + theano.tensor.exp(inputs[1])
-        #z = inputs_0_printed.reshape(theano.tensor.cast((self.input_shapes[0][0], self.input_shapes[0][1]), 'int64')) + theano.tensor.sqrt(inputs[1].reshape(theano.tensor.cast((self.input_shapes[1][0], self.input_shapes[1][1]), 'int64'))) * self.eta
-        '''z_n = z.shape[0]
-        z_num_units = z.shape[1]
-        z_L = z.shape[2]
 
-        z = z.dimshuffle((0, 2, 1))
-        z = z.reshape((z_n * z_L, z_num_units))
-        '''
+        z_tmp = inputs[0] + theano.tensor.exp(inputs[1]) * self.eta # * eta_printed
+
+        z_tmp_list = []
+        for i in xrange(self.L):
+            z_tmp_list.append(theano.tensor.ones_like(z_tmp))
+            z_tmp_list[i] = z_tmp_list[i] * z_tmp 
+        z = theano.tensor.concatenate(z_tmp_list, axis=1)
+        # from utils.tensor_repeat import tensor_repeat
+        # z = tensor_repeat(z_tmp, size=self.L, axis=1)
+
+        z = z.reshape((self.input_shapes[0][0] * self.L, self.input_shapes[0][1]))
+
         return z
 
