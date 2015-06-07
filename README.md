@@ -8,7 +8,7 @@ Nvidia Titan Z
 
 numpy 1.8.2
 
-scipy 0.17.0.dev0+c574d7c
+scipy 0.16.0b2
 
 Theano 0.7 
 
