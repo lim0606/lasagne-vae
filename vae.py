@@ -11,6 +11,13 @@ import vae
 from utils.tensor_repeat import tensor_repeat
 from utils.updates import adagrad_w_prior
 
+# pickle
+try:
+    import cPickle as pickle
+except:
+    #import pickle
+    print("hi")
+
 # Variational Inference 
 # let us have p(x|z) and p(z) (this can be true prob dist or some models we assumed)
 # and we want to find p(z|x) 
@@ -61,8 +68,8 @@ batchsize = 100
 L = 1
 hidden_size = 400
 z_size = 20
-update_rules = 'momentum' # you can choose either 1) momentum, 2) adagrad, and 3) adagrad_w_prior. 
-num_epochs = 100
+update_rules = 'adagrad' # you can choose either 1) momentum, 2) adagrad, and 3) adagrad_w_prior. 
+num_epochs = 1000
 
 
 # Step 2: build model -> equals to build model #########
@@ -98,7 +105,7 @@ l_log_sigma = lasagne.layers.DenseLayer(
     l_hidden1, 
     num_units=z_size,
     nonlinearity=lasagne.nonlinearities.linear,
-    W=lasagne.init.Normal(std=0.01 * 0.5), b=lasagne.init.Normal(std=0.01 * 0.5),
+    W=lasagne.init.Normal(std=0.01), b=lasagne.init.Normal(std=0.01),
 ) # batchsize x num_units
 
 l_z = vae.layers.GaussianPropLayer(
@@ -246,3 +253,12 @@ for epoch_num in range(num_epochs):
           % (epoch_num + 1, train_loss, valid_loss))
     #print("Epoch: %d, train_loss=%f, valid_loss=%f, valid_accuracy=%f"
     #      % (epoch_num + 1, train_loss, valid_loss, accuracy))
+
+    if epoch_num % 100 == 0:
+        # save
+        weights_save = lasagne.layers.get_all_param_values(l_out)
+        pickle.dump( weights_save, open( "mnist_vae_epoch_%d.pkl" % epoch['number'], "wb" ) )
+        # load
+        #weights_load = pickle.load( open( "weights.pkl", "rb" ) )
+        #lasagne.layers.set_all_param_values(output_layer, weights_load)
+
