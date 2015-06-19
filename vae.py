@@ -67,7 +67,7 @@ num_data = X_train.shape[0]
 batchsize = 100
 L = 1
 hidden_size = 400
-z_size = 20
+z_size = 200
 update_rules = 'adagrad' # you can choose either 1) momentum, 2) adagrad, and 3) adagrad_w_prior. 
 num_epochs = 1000
 
@@ -206,17 +206,26 @@ valid_fn = theano.function(inputs=[l_in.input_var],
 
 print("Starting training...")
 
+from utils import batchiterator
+batchitertrain = batchiterator.BatchIterator(range(num_data), batchsize, data=(X_train))
+batchitertrain = batchiterator.threaded_generator(batchitertrain,3)
+
+batchiterval = batchiterator.BatchIterator(range(X_valid.shape[0]), batchsize, data=(X_valid))
+batchitertval = batchiterator.threaded_generator(batchiterval,3)
+
 #num_epochs = 100
 for epoch_num in range(num_epochs):
     # iterate over training minibatches and update the weights
     num_batches_train = int(np.ceil(len(X_train) / batchsize))
     train_losses = []
     for batch_num in range(num_batches_train):
-        batch_slice = slice(batchsize * batch_num,
+        '''batch_slice = slice(batchsize * batch_num,
                             batchsize * (batch_num + 1))
         X_batch = X_train[batch_slice]
         y_batch = y_train[batch_slice]
-       
+        '''
+        X_batch = batchitertrain.next()[0]
+     
         #loss, = train_fn(X_batch, y_batch)
         loss, = train_fn(X_batch)
          
@@ -230,15 +239,17 @@ for epoch_num in range(num_epochs):
     valid_losses = []
     list_of_probabilities_batch = []
     for batch_num in range(num_batches_valid):
-        batch_slice = slice(batchsize * batch_num,
+        '''batch_slice = slice(batchsize * batch_num,
                             batchsize * (batch_num + 1))
         X_batch = X_valid[batch_slice]
         y_batch = y_valid[batch_slice]
+        '''
+        X_batch = batchiterval.next()[0]
 
         #loss, probabilities_batch = valid_fn(X_batch, y_batch)
         loss, probabilities_batch = valid_fn(X_batch)
         #print(probabilities_batch.shape)
-        #raise NameError('Hi There')
+
         valid_losses.append(loss/batchsize)
         list_of_probabilities_batch.append(probabilities_batch)
     valid_loss = np.mean(valid_losses)
@@ -257,7 +268,7 @@ for epoch_num in range(num_epochs):
     if epoch_num % 100 == 0:
         # save
         weights_save = lasagne.layers.get_all_param_values(l_out)
-        pickle.dump( weights_save, open( "mnist_vae_epoch_%d.pkl" % epoch['number'], "wb" ) )
+        pickle.dump( weights_save, open( "mnist_vae_h_%d_z_%d_epoch_%d.pkl" % (hidden_size, z_size, epoch_num), "wb" ) )
         # load
         #weights_load = pickle.load( open( "weights.pkl", "rb" ) )
         #lasagne.layers.set_all_param_values(output_layer, weights_load)
