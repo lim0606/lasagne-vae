@@ -53,3 +53,4 @@ etc/*
 vae_bn.py
 vae_bn.py.bak
 vae_zae.py
+*.weight.pkl

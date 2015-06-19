@@ -268,7 +268,7 @@ for epoch_num in range(num_epochs):
     if epoch_num % 100 == 0:
         # save
         weights_save = lasagne.layers.get_all_param_values(l_out)
-        pickle.dump( weights_save, open( "mnist_vae_h_%d_z_%d_epoch_%d.pkl" % (hidden_size, z_size, epoch_num), "wb" ) )
+        pickle.dump( weights_save, open( "mnist_vae_h_%d_z_%d_epoch_%d.weight.pkl" % (hidden_size, z_size, epoch_num), "wb" ) )
         # load
         #weights_load = pickle.load( open( "weights.pkl", "rb" ) )
         #lasagne.layers.set_all_param_values(output_layer, weights_load)
