@@ -1,0 +1,3 @@
+Experiment Log VAE
+Epoch: 1, train_loss=-226.203757, valid_loss=-195.767245
+Epoch: 2, train_loss=-188.657057, valid_loss=-178.179090

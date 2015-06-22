@@ -69,7 +69,7 @@ L = 1
 hidden_size = 400
 z_size = 200
 update_rules = 'adagrad' # you can choose either 1) momentum, 2) adagrad, and 3) adagrad_w_prior. 
-num_epochs = 1000
+num_epochs = 2000
 
 
 # Step 2: build model -> equals to build model #########
@@ -213,6 +213,12 @@ batchitertrain = batchiterator.threaded_generator(batchitertrain,3)
 batchiterval = batchiterator.BatchIterator(range(X_valid.shape[0]), batchsize, data=(X_valid))
 batchitertval = batchiterator.threaded_generator(batchiterval,3)
 
+import datetime
+now = datetime.datetime.now()
+output_filename = "output_%04d%02d%02d_%02d%02d%02d_%03d.log" % (now.year, now.month, now.day, now.hour, now.minute, now.second, now.microsecond) 
+with open(output_filename, "w") as f:
+    f.write("Experiment Log VAE\n")
+
 #num_epochs = 100
 for epoch_num in range(num_epochs):
     # iterate over training minibatches and update the weights
@@ -222,8 +228,7 @@ for epoch_num in range(num_epochs):
         '''batch_slice = slice(batchsize * batch_num,
                             batchsize * (batch_num + 1))
         X_batch = X_train[batch_slice]
-        y_batch = y_train[batch_slice]
-        '''
+        y_batch = y_train[batch_slice]'''
         X_batch = batchitertrain.next()[0]
      
         #loss, = train_fn(X_batch, y_batch)
@@ -242,8 +247,7 @@ for epoch_num in range(num_epochs):
         '''batch_slice = slice(batchsize * batch_num,
                             batchsize * (batch_num + 1))
         X_batch = X_valid[batch_slice]
-        y_batch = y_valid[batch_slice]
-        '''
+        y_batch = y_valid[batch_slice]'''
         X_batch = batchiterval.next()[0]
 
         #loss, probabilities_batch = valid_fn(X_batch, y_batch)
@@ -260,10 +264,13 @@ for epoch_num in range(num_epochs):
     # calculate accuracy for this epoch
     #accuracy = sklearn.metrics.accuracy_score(y_valid, predicted_classes)
 
-    print("Epoch: %d, train_loss=%f, valid_loss=%f"
-          % (epoch_num + 1, train_loss, valid_loss))
+    out_str = "Epoch: %d, train_loss=%f, valid_loss=%f" % (epoch_num + 1, train_loss, valid_loss)
+    print(out_str)
     #print("Epoch: %d, train_loss=%f, valid_loss=%f, valid_accuracy=%f"
     #      % (epoch_num + 1, train_loss, valid_loss, accuracy))
+
+    with open(output_filename, "a") as f:
+            f.write(out_str + "\n")
 
     if epoch_num % 100 == 0:
         # save
@@ -272,4 +279,3 @@ for epoch_num in range(num_epochs):
         # load
         #weights_load = pickle.load( open( "weights.pkl", "rb" ) )
         #lasagne.layers.set_all_param_values(output_layer, weights_load)
-
