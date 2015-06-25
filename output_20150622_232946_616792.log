@@ -1,4 +1,4 @@
-Experiment Log VAE with BN
+Experiment Log: VAE with BN
 Epoch: 1, train_loss=-197.313353, valid_loss=-155.267317
 Epoch: 2, train_loss=-150.732467, valid_loss=-146.101005
 Epoch: 3, train_loss=-142.068024, valid_loss=-137.507352

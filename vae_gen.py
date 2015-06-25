@@ -138,6 +138,26 @@ l_out = lasagne.layers.DenseLayer(
     W=lasagne.init.Normal(std=0.01), b=lasagne.init.Normal(std=0.01),
 )
 
+
+# decoder decoder
+l_in_tmp = lasagne.layers.InputLayer(
+    shape=(batchsize, z_size)
+)
+l_z_tmp = lasagne.layers.GaussianNoiseLayer(
+    l_in_tmp,
+    sigma=1,
+)
+
+l_hidden2_tmp = vae.layers.DenseLayerDummy(
+    l_z_tmp,
+    origin=l_hidden2,
+)
+
+l_out_tmp = vae.layers.DenseLayerDummy(
+    l_hidden2_tmp,
+    origin=l_out,
+)
+
 # - build cost
 input_dim = T.prod(lasagne.layers.get_output(l_in).shape[1:])
 input_tmp =  lasagne.layers.get_output(l_in).reshape((lasagne.layers.get_output(l_in).shape[0], T.prod(lasagne.layers.get_output(l_in).shape[1:])))
@@ -155,7 +175,7 @@ lower_bound = (minus_kl_div + logpxz) #/batchsize
 #   Thus, multiply minus one to the cost. 
 all_params = lasagne.layers.get_all_params(l_out)
 all_grads = theano.grad(-lower_bound, all_params)
-
+'''
 # - update rules 
 #   you can choose update rules 
 #   1) momentum, 2) adagrad, and 3) adagrad_w_prior
@@ -201,81 +221,27 @@ valid_fn = theano.function(inputs=[l_in.input_var],
                            outputs=[lower_bound,
                                     lasagne.layers.get_output(l_out, deterministic=True)])
 
+'''
+encode_fn = theano.function(inputs=[l_in.input_var],
+                           outputs=[lasagne.layers.get_output(l_z, deterministic=True)])
+recon_fn = theano.function(inputs=[l_in_tmp.input_var],
+                           outputs=[lasagne.layers.get_output(l_out_tmp, deterministic=True)])
 
 # ################################# training #################################
 
-print("Starting training...")
+# load
+epoch_num = 1900
+weights_load = pickle.load( open( "mnist_vae_h_%d_z_%d_epoch_%d.weight.pkl" % (hidden_size, z_size, epoch_num), "rb" ) )
+lasagne.layers.set_all_param_values(l_out, weights_load)
 
-from utils import batchiterator
-batchitertrain = batchiterator.BatchIterator(range(num_data), batchsize, data=(X_train))
-batchitertrain = batchiterator.threaded_generator(batchitertrain,3)
+print y_train
 
-batchiterval = batchiterator.BatchIterator(range(X_valid.shape[0]), batchsize, data=(X_valid))
-batchitertval = batchiterator.threaded_generator(batchiterval,3)
+recon, = recon_fn(np.random.rand(batchsize, z_size).astype(theano.config.floatX))
 
-import datetime
-now = datetime.datetime.now()
-output_filename = "output_%04d%02d%02d_%02d%02d%02d_%03d.log" % (now.year, now.month, now.day, now.hour, now.minute, now.second, now.microsecond) 
-with open(output_filename, "w") as f:
-    f.write("Experiment Log: VAE\n")
+print recon.shape
+import cv2
+for i in xrange(recon.shape[0]):
+    image = recon[i,:]
+    image = 255 * image.reshape((28, 28))
+    cv2.imwrite('recon_%d.png' % i, image)
 
-#num_epochs = 100
-for epoch_num in range(num_epochs):
-    # iterate over training minibatches and update the weights
-    num_batches_train = int(np.ceil(len(X_train) / batchsize))
-    train_losses = []
-    for batch_num in range(num_batches_train):
-        '''batch_slice = slice(batchsize * batch_num,
-                            batchsize * (batch_num + 1))
-        X_batch = X_train[batch_slice]
-        y_batch = y_train[batch_slice]'''
-        X_batch = batchitertrain.next()[0]
-     
-        #loss, = train_fn(X_batch, y_batch)
-        loss, = train_fn(X_batch)
-         
-        train_losses.append(loss/batchsize)
-    
-    # aggregate training losses for each minibatch into scalar
-    train_loss = np.mean(train_losses)
-
-    # calculate validation loss
-    num_batches_valid = int(np.ceil(len(X_valid) / batchsize))
-    valid_losses = []
-    list_of_probabilities_batch = []
-    for batch_num in range(num_batches_valid):
-        '''batch_slice = slice(batchsize * batch_num,
-                            batchsize * (batch_num + 1))
-        X_batch = X_valid[batch_slice]
-        y_batch = y_valid[batch_slice]'''
-        X_batch = batchiterval.next()[0]
-
-        #loss, probabilities_batch = valid_fn(X_batch, y_batch)
-        loss, probabilities_batch = valid_fn(X_batch)
-        #print(probabilities_batch.shape)
-
-        valid_losses.append(loss/batchsize)
-        list_of_probabilities_batch.append(probabilities_batch)
-    valid_loss = np.mean(valid_losses)
-    # concatenate probabilities for each batch into a matrix
-    probabilities = np.concatenate(list_of_probabilities_batch)
-    # calculate classes from the probabilities
-    predicted_classes = np.argmax(probabilities, axis=1)
-    # calculate accuracy for this epoch
-    #accuracy = sklearn.metrics.accuracy_score(y_valid, predicted_classes)
-
-    out_str = "Epoch: %d, train_loss=%f, valid_loss=%f" % (epoch_num + 1, train_loss, valid_loss)
-    print(out_str)
-    #print("Epoch: %d, train_loss=%f, valid_loss=%f, valid_accuracy=%f"
-    #      % (epoch_num + 1, train_loss, valid_loss, accuracy))
-
-    with open(output_filename, "a") as f:
-            f.write(out_str + "\n")
-
-    if (epoch_num+1) % 100 == 0:
-        # save
-        weights_save = lasagne.layers.get_all_param_values(l_out)
-        pickle.dump( weights_save, open( "mnist_vae_h_%d_z_%d_epoch_%d.weight.pkl" % (hidden_size, z_size, epoch_num), "wb" ) )
-        # load
-        #weights_load = pickle.load( open( "weights.pkl", "rb" ) )
-        #lasagne.layers.set_all_param_values(output_layer, weights_load)

@@ -66,7 +66,7 @@ class BNLayer(Layer):
 
         if len(self.input_shape) is 4:
             self.gamma = self.add_param(init.Constant(gamma), (self.input_shape[1],), name='gamma', regularizable=False).dimshuffle(('x',0,'x','x'))
-            self.beta = self.add_param(init.Constant(beta), (self.input_shape[1],), name='beta', regularizable=False)
+            self.beta = self.add_param(init.Constant(beta), (self.input_shape[1],), name='beta', regularizable=False).dimshuffle(('x',0,'x','x'))
  
         elif len(self.input_shape) is 2:
             self.gamma = self.add_param(init.Constant(gamma), (self.input_shape[1],), name='gamma', regularizable=False).dimshuffle(('x',0))
